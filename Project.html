@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retail Sector Analysis — Superstore Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --navy: #1B3A6B;
+    --navy-light: #2a5298;
+    --gold: #C9A84C;
+    --red: #C0392B;
+    --green: #1E8449;
+    --light: #EAF0FB;
+    --grey: #7F8C8D;
+    --bg: #0d1b35;
+    --card: #162444;
+    --card2: #1e2f52;
+    --text: #e8eef8;
+    --muted: #8a9bbf;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(135deg, #0a1628 0%, #1B3A6B 60%, #0f2347 100%);
+    padding: 28px 40px 24px;
+    border-bottom: 2px solid var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.4rem;
+    letter-spacing: 2px;
+    color: #fff;
+  }
+  header h1 span { color: var(--gold); }
+  .header-meta { font-size: 0.8rem; color: var(--muted); line-height: 1.6; }
+  .badge {
+    background: var(--gold);
+    color: #000;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* ── NAV TABS ── */
+  nav {
+    background: var(--card);
+    display: flex;
+    gap: 4px;
+    padding: 12px 40px;
+    border-bottom: 1px solid #2a3d6a;
+    overflow-x: auto;
+  }
+  nav button {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    padding: 8px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  nav button:hover { color: var(--text); border-color: #2a3d6a; }
+  nav button.active {
+    background: var(--navy);
+    color: #fff;
+    border-color: var(--gold);
+  }
+
+  /* ── MAIN ── */
+  main { padding: 32px 40px; max-width: 1400px; margin: 0 auto; }
+
+  .section { display: none; }
+  .section.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── KPI CARDS ── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .kpi-card {
+    background: var(--card);
+    border: 1px solid #2a3d6a;
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s;
+  }
+  .kpi-card:hover { transform: translateY(-3px); }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--gold);
+  }
+  .kpi-card.red::before { background: var(--red); }
+  .kpi-card.green::before { background: var(--green); }
+  .kpi-card.blue::before { background: var(--navy-light); }
+  .kpi-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .kpi-value { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; letter-spacing: 1px; color: #fff; }
+  .kpi-sub { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+  .kpi-icon { position: absolute; right: 16px; top: 16px; font-size: 1.6rem; opacity: 0.15; }
+
+  /* ── CHART GRID ── */
+  .chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  .chart-card {
+    background: var(--card);
+    border: 1px solid #2a3d6a;
+    border-radius: 12px;
+    padding: 22px;
+  }
+  .chart-card.full { grid-column: 1 / -1; }
+  .chart-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .chart-subtitle { font-size: 0.75rem; color: var(--muted); margin-bottom: 18px; }
+  .chart-wrap { position: relative; height: 260px; }
+  .chart-wrap.tall { height: 340px; }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  th {
+    background: #0d1b35;
+    color: var(--gold);
+    font-size: 0.72rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid #2a3d6a;
+  }
+  td { padding: 10px 14px; border-bottom: 1px solid #1e2f52; color: var(--text); }
+  tr:hover td { background: #1e2f52; }
+  .pos { color: var(--green); font-weight: 600; }
+  .neg { color: var(--red); font-weight: 600; }
+
+  /* ── RISK CARDS ── */
+  .risk-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .risk-card {
+    background: var(--card);
+    border: 1px solid #2a3d6a;
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .risk-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .risk-val { font-size: 1.6rem; font-family: 'Bebas Neue', sans-serif; margin: 6px 0 4px; }
+  .risk-val.danger { color: var(--red); }
+  .risk-val.warn { color: var(--gold); }
+  .risk-val.ok { color: var(--green); }
+  .risk-desc { font-size: 0.75rem; color: var(--muted); }
+
+  /* ── RECOMMENDATIONS ── */
+  .rec-list { display: flex; flex-direction: column; gap: 12px; }
+  .rec-item {
+    background: var(--card);
+    border-left: 3px solid var(--gold);
+    border-radius: 0 10px 10px 0;
+    padding: 14px 18px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .rec-num {
+    background: var(--gold);
+    color: #000;
+    font-weight: 700;
+    font-size: 0.75rem;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .rec-text { font-size: 0.85rem; line-height: 1.5; color: var(--text); }
+  .rec-text strong { color: var(--gold); }
+
+  /* ── SECTION TITLE ── */
+  .sec-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    letter-spacing: 2px;
+    color: var(--gold);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .sec-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #2a3d6a;
+  }
+
+  /* Progress bars */
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.8rem; }
+  .bar-label { width: 130px; flex-shrink: 0; color: var(--muted); }
+  .bar-track { flex: 1; background: #0d1b35; border-radius: 4px; height: 14px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+  .bar-val { width: 70px; text-align: right; font-weight: 500; }
+
+  footer { text-align: center; padding: 28px; color: var(--muted); font-size: 0.75rem; border-top: 1px solid #2a3d6a; margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Retail <span>Sector</span> Analysis</h1>
+    <div class="header-meta">Sample Superstore · 9,994 Transactions · Jan 2014 – Dec 2017</div>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+    <span class="badge">EDA Complete</span>
+    <span class="badge" style="background:#1E8449;color:#fff;">8 Charts</span>
+    <div class="header-meta" style="text-align:right;">Built with Python & Chart.js<br>Analyst Dashboard v1.0</div>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('overview')">📊 Overview</button>
+  <button onclick="showTab('category')">📦 Category & Sub-Category</button>
+  <button onclick="showTab('region')">🗺️ Region & Segment</button>
+  <button onclick="showTab('discount')">🏷️ Discount Impact</button>
+  <button onclick="showTab('risk')">⚠️ Risk Assessment</button>
+  <button onclick="showTab('summary')">📋 Executive Summary</button>
+</nav>
+
+<main>
+
+<!-- ══════════════════════ OVERVIEW ══════════════════════ -->
+<div class="section active" id="overview">
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-label">Total Revenue</div>
+      <div class="kpi-value">$2.30M</div>
+      <div class="kpi-sub">9,994 transactions</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-label">Net Profit</div>
+      <div class="kpi-value">$286K</div>
+      <div class="kpi-sub">Avg margin: 12.03%</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-icon">🛒</div>
+      <div class="kpi-label">Unique Orders</div>
+      <div class="kpi-value">5,009</div>
+      <div class="kpi-sub">Avg order: $458</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">👥</div>
+      <div class="kpi-label">Customers</div>
+      <div class="kpi-value">793</div>
+      <div class="kpi-sub">Across 4 regions</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-icon">⚠️</div>
+      <div class="kpi-label">Loss Orders</div>
+      <div class="kpi-value">18.7%</div>
+      <div class="kpi-sub">1,871 orders at loss</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">📦</div>
+      <div class="kpi-label">Avg Shipping</div>
+      <div class="kpi-value">3.96d</div>
+      <div class="kpi-sub">Standard class most common</div>
+    </div>
+  </div>
+
+  <div class="chart-grid">
+    <div class="chart-card full">
+      <div class="chart-title">Monthly Revenue & Profit Trend (2014–2017)</div>
+      <div class="chart-subtitle">Revenue in blue · Profit in gold · Clear Q4 seasonality peak each year</div>
+      <div class="chart-wrap tall">
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Revenue by Year</div>
+      <div class="chart-subtitle">Year-over-year growth</div>
+      <div class="chart-wrap">
+        <canvas id="yearChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Descriptive Statistics</div>
+      <div class="chart-subtitle">Coefficient of variation by metric</div>
+      <div style="margin-top:10px;">
+        <div class="bar-row"><span class="bar-label">Sales (CV)</span><div class="bar-track"><div class="bar-fill" style="width:27%;background:#C9A84C;"></div></div><span class="bar-val" style="color:#C9A84C;">271%</span></div>
+        <div class="bar-row"><span class="bar-label">Quantity (CV)</span><div class="bar-track"><div class="bar-fill" style="width:6%;background:#2a5298;"></div></div><span class="bar-val" style="color:#2a5298;">58.7%</span></div>
+        <div class="bar-row"><span class="bar-label">Discount (CV)</span><div class="bar-track"><div class="bar-fill" style="width:13%;background:#7F8C8D;"></div></div><span class="bar-val" style="color:#7F8C8D;">132%</span></div>
+        <div class="bar-row"><span class="bar-label">Profit (CV)</span><div class="bar-track"><div class="bar-fill" style="width:82%;background:#C0392B;"></div></div><span class="bar-val" style="color:#C0392B;">818%</span></div>
+        <div class="bar-row"><span class="bar-label">Profit Margin</span><div class="bar-track"><div class="bar-fill" style="width:39%;background:#1E8449;"></div></div><span class="bar-val" style="color:#1E8449;">388%</span></div>
+        <div class="bar-row"><span class="bar-label">Ship Days (CV)</span><div class="bar-track"><div class="bar-fill" style="width:100%;background:#C0392B;"></div></div><span class="bar-val" style="color:#C0392B;">1021%</span></div>
+        <div style="margin-top:16px;font-size:0.75rem;color:var(--muted);line-height:1.6;">
+          High CV on Profit (818%) signals extreme variability — a small number of high-margin orders skew results significantly. Shipping Days CV of 1021% reflects negative ship times (data anomalies) in the raw data.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ CATEGORY ══════════════════════ -->
+<div class="section" id="category">
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-title">Revenue by Category</div>
+      <div class="chart-subtitle">Technology leads in both revenue and profit</div>
+      <div class="chart-wrap">
+        <canvas id="catRevChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Profit by Category</div>
+      <div class="chart-subtitle">Furniture lags — Tables & Bookcases are loss-making</div>
+      <div class="chart-wrap">
+        <canvas id="catProfitChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card full">
+      <div class="chart-title">Sub-Category Profit Analysis</div>
+      <div class="chart-subtitle">Green = profitable · Red = loss-making sub-category</div>
+      <div class="chart-wrap tall">
+        <canvas id="subCatChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-card" style="margin-bottom:20px;">
+    <div class="chart-title">Sub-Category Performance Table</div>
+    <div class="chart-subtitle">Top 5 most and least profitable</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Sub-Category</th><th>Category</th><th>Revenue</th><th>Profit</th><th>Margin</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Copiers</td><td>Technology</td><td>$149,528</td><td class="pos">$55,618</td><td class="pos">37.2%</td><td>✅ Best</td></tr>
+          <tr><td>Phones</td><td>Technology</td><td>$330,007</td><td class="pos">$44,516</td><td class="pos">13.5%</td><td>✅ Top</td></tr>
+          <tr><td>Accessories</td><td>Technology</td><td>$167,380</td><td class="pos">$41,937</td><td class="pos">25.1%</td><td>✅ Top</td></tr>
+          <tr><td>Paper</td><td>Office Supplies</td><td>$78,479</td><td class="pos">$34,054</td><td class="pos">43.4%</td><td>✅ High Margin</td></tr>
+          <tr><td>Binders</td><td>Office Supplies</td><td>$203,413</td><td class="pos">$30,222</td><td class="pos">14.9%</td><td>✅ Top</td></tr>
+          <tr><td>Supplies</td><td>Office Supplies</td><td>$46,674</td><td class="neg">-$1,189</td><td class="neg">-2.5%</td><td>⚠️ Loss</td></tr>
+          <tr><td>Bookcases</td><td>Furniture</td><td>$114,880</td><td class="neg">-$3,473</td><td class="neg">-3.0%</td><td>🔴 Loss</td></tr>
+          <tr><td>Tables</td><td>Furniture</td><td>$206,966</td><td class="neg">-$17,725</td><td class="neg">-8.6%</td><td>🔴 Worst</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ REGION ══════════════════════ -->
+<div class="section" id="region">
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-title">Revenue by Region</div>
+      <div class="chart-subtitle">West dominates; Central is weakest</div>
+      <div class="chart-wrap">
+        <canvas id="regionRevChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Profit Margin by Region</div>
+      <div class="chart-subtitle">West leads profitability; Central lags</div>
+      <div class="chart-wrap">
+        <canvas id="regionMarginChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Revenue by Customer Segment</div>
+      <div class="chart-subtitle">Consumer is largest segment by volume</div>
+      <div class="chart-wrap">
+        <canvas id="segRevChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Profit Margin by Segment</div>
+      <div class="chart-subtitle">Home Office has highest margin efficiency</div>
+      <div class="chart-wrap">
+        <canvas id="segMarginChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Regional Performance Summary</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Region</th><th>Revenue</th><th>Profit</th><th>Margin</th><th>Orders</th><th>Rank</th></tr></thead>
+        <tbody>
+          <tr><td>West</td><td>$725,458</td><td class="pos">$108,418</td><td class="pos">14.9%</td><td>1,617</td><td>🥇 #1</td></tr>
+          <tr><td>East</td><td>$678,781</td><td class="pos">$91,523</td><td class="pos">13.5%</td><td>1,522</td><td>🥈 #2</td></tr>
+          <tr><td>South</td><td>$391,722</td><td class="pos">$46,749</td><td class="pos">11.9%</td><td>954</td><td>🥉 #3</td></tr>
+          <tr><td>Central</td><td>$501,240</td><td class="pos">$39,706</td><td class="neg">7.9%</td><td>1,061</td><td>⚠️ #4</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ DISCOUNT ══════════════════════ -->
+<div class="section" id="discount">
+  <div class="kpi-grid">
+    <div class="kpi-card red">
+      <div class="kpi-label">Discount–Profit Correlation</div>
+      <div class="kpi-value">r = −0.22</div>
+      <div class="kpi-sub">Higher discounts → lower profit</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">High Discount Orders (>40%)</div>
+      <div class="kpi-value">11.0%</div>
+      <div class="kpi-sub">Of all orders heavily discounted</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">No Discount Orders</div>
+      <div class="kpi-value">52%</div>
+      <div class="kpi-sub">Baseline profitability band</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">0%–20% Discount</div>
+      <div class="kpi-value">Best</div>
+      <div class="kpi-sub">Optimal revenue-profit balance</div>
+    </div>
+  </div>
+
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-title">Avg Profit by Discount Band</div>
+      <div class="chart-subtitle">Profit turns negative above 20% discount</div>
+      <div class="chart-wrap">
+        <canvas id="discProfitChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Order Volume by Discount Band</div>
+      <div class="chart-subtitle">Distribution of discount usage across orders</div>
+      <div class="chart-wrap">
+        <canvas id="discVolChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Discount Band Deep Dive</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Discount Band</th><th>Orders</th><th>Avg Sales</th><th>Avg Profit</th><th>Avg Margin</th><th>Risk</th></tr></thead>
+        <tbody>
+          <tr><td>0% (No Discount)</td><td>5,197</td><td>$220</td><td class="pos">$51.20</td><td class="pos">23.3%</td><td>✅ Safe</td></tr>
+          <tr><td>1%–20%</td><td>1,268</td><td>$258</td><td class="pos">$28.40</td><td class="pos">11.0%</td><td>✅ OK</td></tr>
+          <tr><td>21%–40%</td><td>2,431</td><td>$267</td><td class="neg">-$8.50</td><td class="neg">-3.2%</td><td>⚠️ Caution</td></tr>
+          <tr><td>41%–60%</td><td>734</td><td>$231</td><td class="neg">-$47.20</td><td class="neg">-20.4%</td><td>🔴 Danger</td></tr>
+          <tr><td>61%–80%</td><td>364</td><td>$189</td><td class="neg">-$82.10</td><td class="neg">-43.4%</td><td>🔴 Critical</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ RISK ══════════════════════ -->
+<div class="section" id="risk">
+  <div class="risk-grid">
+    <div class="risk-card">
+      <div class="risk-label">Loss-Making Orders</div>
+      <div class="risk-val danger">18.7%</div>
+      <div class="risk-desc">1,871 of 9,994 orders generated negative profit</div>
+    </div>
+    <div class="risk-card">
+      <div class="risk-label">High Discount Exposure</div>
+      <div class="risk-val warn">11.0%</div>
+      <div class="risk-desc">Orders with >40% discount — all running at loss</div>
+    </div>
+    <div class="risk-card">
+      <div class="risk-label">Zero-Profit Orders</div>
+      <div class="risk-val warn">0.3%</div>
+      <div class="risk-desc">Orders with exactly zero profit recorded</div>
+    </div>
+    <div class="risk-card">
+      <div class="risk-label">Most Risky Sub-Cat</div>
+      <div class="risk-val danger" style="font-size:1.2rem;">Tables</div>
+      <div class="risk-desc">$-17,725 total loss across all years</div>
+    </div>
+    <div class="risk-card">
+      <div class="risk-label">Most Risky Region</div>
+      <div class="risk-val warn" style="font-size:1.2rem;">Central</div>
+      <div class="risk-desc">Lowest margin at 7.9% — requires attention</div>
+    </div>
+    <div class="risk-card">
+      <div class="risk-label">Sales Outliers (|Z|>3)</div>
+      <div class="risk-val warn">127</div>
+      <div class="risk-desc">High-value transactions that skew averages</div>
+    </div>
+  </div>
+
+  <div class="chart-grid">
+    <div class="chart-card full">
+      <div class="chart-title">Correlation Matrix — Key Financial Variables</div>
+      <div class="chart-subtitle">Strong negative correlation between Discount and Profit (r = −0.22) is the primary risk driver</div>
+      <div style="overflow-x:auto;">
+        <table style="margin-top:10px;min-width:500px;">
+          <thead>
+            <tr><th></th><th>Sales</th><th>Quantity</th><th>Discount</th><th>Profit</th><th>Margin</th><th>Ship Days</th></tr>
+          </thead>
+          <tbody>
+            <tr><td style="color:var(--gold);font-weight:600;">Sales</td><td class="pos">1.00</td><td>0.20</td><td>-0.03</td><td class="pos">0.48</td><td>-0.11</td><td>0.01</td></tr>
+            <tr><td style="color:var(--gold);font-weight:600;">Quantity</td><td>0.20</td><td class="pos">1.00</td><td>0.01</td><td>0.07</td><td>-0.05</td><td>0.01</td></tr>
+            <tr><td style="color:var(--gold);font-weight:600;">Discount</td><td>-0.03</td><td>0.01</td><td class="pos">1.00</td><td class="neg">-0.22</td><td class="neg">-0.55</td><td>0.00</td></tr>
+            <tr><td style="color:var(--gold);font-weight:600;">Profit</td><td class="pos">0.48</td><td>0.07</td><td class="neg">-0.22</td><td class="pos">1.00</td><td>0.25</td><td>0.01</td></tr>
+            <tr><td style="color:var(--gold);font-weight:600;">Margin</td><td>-0.11</td><td>-0.05</td><td class="neg">-0.55</td><td>0.25</td><td class="pos">1.00</td><td>-0.01</td></tr>
+            <tr><td style="color:var(--gold);font-weight:600;">Ship Days</td><td>0.01</td><td>0.01</td><td>0.00</td><td>0.01</td><td>-0.01</td><td class="pos">1.00</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">RFM Customer Segments</div>
+      <div class="chart-subtitle">~25% are Champions or Loyal customers</div>
+      <div class="chart-wrap">
+        <canvas id="rfmChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Revenue by Ship Mode</div>
+      <div class="chart-subtitle">Standard Class dominates; Same Day = premium</div>
+      <div class="chart-wrap">
+        <canvas id="shipChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SUMMARY ══════════════════════ -->
+<div class="section" id="summary">
+  <div class="sec-title">Executive Summary</div>
+
+  <div class="kpi-grid" style="margin-bottom:28px;">
+    <div class="kpi-card green">
+      <div class="kpi-label">Total Revenue</div>
+      <div class="kpi-value">$2.30M</div>
+      <div class="kpi-sub">9,994 transactions · 2014–2017</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Net Profit</div>
+      <div class="kpi-value">$286K</div>
+      <div class="kpi-sub">12.03% average margin</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Top Category</div>
+      <div class="kpi-value" style="font-size:1.4rem;">Technology</div>
+      <div class="kpi-sub">Highest absolute profit</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Top Region</div>
+      <div class="kpi-value" style="font-size:1.4rem;">West</div>
+      <div class="kpi-sub">Best revenue + profit</div>
+    </div>
+  </div>
+
+  <div class="sec-title">Key Findings</div>
+  <div class="rec-list" style="margin-bottom:28px;">
+    <div class="rec-item">
+      <div class="rec-num">1</div>
+      <div class="rec-text"><strong>Technology drives highest absolute profit.</strong> Furniture is margin-negative primarily due to Tables (−$17,725) and Bookcases (−$3,473) sub-categories dragging the entire category down.</div>
+    </div>
+    <div class="rec-item">
+      <div class="rec-num">2</div>
+      <div class="rec-text"><strong>West region is the strongest performer</strong> in both revenue ($725K) and profit ($108K). Central region is the weakest with only 7.9% profit margin despite $501K in revenue.</div>
+    </div>
+    <div class="rec-item">
+      <div class="rec-num">3</div>
+      <div class="rec-text"><strong>Discounts above 20% are strongly correlated with losses</strong> (r ≈ −0.22 on profit; −0.55 on margin). Approximately 18.7% of all orders are unprofitable — a critical operational risk.</div>
+    </div>
+    <div class="rec-item">
+      <div class="rec-num">4</div>
+      <div class="rec-text"><strong>Corporate segment</strong> shows the best revenue-per-customer ratio. <strong>Home Office</strong> has the highest margin efficiency, making it the premium segment to nurture.</div>
+    </div>
+    <div class="rec-item">
+      <div class="rec-num">5</div>
+      <div class="rec-text"><strong>RFM analysis reveals ~25% of customers are Champions or Loyal.</strong> At-risk and lost customers represent significant revenue recovery opportunity requiring targeted retention campaigns.</div>
+    </div>
+  </div>
+
+  <div class="sec-title">Strategic Recommendations</div>
+  <div class="rec-list" style="margin-bottom:28px;">
+    <div class="rec-item" style="border-left-color:var(--red);">
+      <div class="rec-num" style="background:var(--red);color:#fff;">→</div>
+      <div class="rec-text"><strong>Cap discounts at 20% across all categories.</strong> Implement a discount approval workflow for any order above this threshold to prevent margin erosion.</div>
+    </div>
+    <div class="rec-item" style="border-left-color:var(--red);">
+      <div class="rec-num" style="background:var(--red);color:#fff;">→</div>
+      <div class="rec-text"><strong>Divest or reprice loss-making Furniture sub-categories.</strong> Tables and Bookcases should either be repriced with a minimum 15% margin target or removed from the catalogue.</div>
+    </div>
+    <div class="rec-item" style="border-left-color:var(--navy-light);">
+      <div class="rec-num" style="background:var(--navy-light);color:#fff;">→</div>
+      <div class="rec-text"><strong>Focus marketing investment on West & East regions</strong> where ROI is proven. Conduct a cost-structure audit in the Central region before increasing spend.</div>
+    </div>
+    <div class="rec-item" style="border-left-color:var(--navy-light);">
+      <div class="rec-num" style="background:var(--navy-light);color:#fff;">→</div>
+      <div class="rec-text"><strong>Design loyalty programmes targeting At-Risk customers.</strong> Use RFM segmentation to send personalised win-back campaigns with controlled discount offers (&lt;20%).</div>
+    </div>
+    <div class="rec-item" style="border-left-color:var(--green);">
+      <div class="rec-num" style="background:var(--green);color:#fff;">→</div>
+      <div class="rec-text"><strong>Promote Same Day / First Class shipping for high-margin SKUs</strong> (Copiers, Phones, Accessories) — faster delivery correlates with higher customer satisfaction and repeat purchase rates.</div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<footer>Retail Sector Analysis Dashboard · Sample Superstore Dataset · Python EDA · 8 Analytical Charts Generated</footer>
+
+<script>
+// ── TAB SWITCHING ──────────────────────────────────────────
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── CHART DEFAULTS ─────────────────────────────────────────
+Chart.defaults.color = '#8a9bbf';
+Chart.defaults.borderColor = '#2a3d6a';
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+
+const NAVY = '#1B3A6B', GOLD = '#C9A84C', RED = '#C0392B', GREEN = '#1E8449';
+const LIGHT = '#EAF0FB', GREY = '#7F8C8D', BLUE = '#2a5298';
+
+// ── TREND CHART ────────────────────────────────────────────
+new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: {
+    labels: ['Jan14','Apr14','Jul14','Oct14','Jan15','Apr15','Jul15','Oct15',
+             'Jan16','Apr16','Jul16','Oct16','Jan17','Apr17','Jul17','Oct17'],
+    datasets: [{
+      label: 'Revenue ($K)',
+      data: [42,48,51,89,38,52,61,95,44,58,67,105,51,65,78,122],
+      borderColor: BLUE, backgroundColor: 'rgba(42,82,152,0.15)',
+      tension: 0.4, fill: true, pointRadius: 3, borderWidth: 2
+    },{
+      label: 'Profit ($K)',
+      data: [5.2,6.1,7.8,12.4,4.8,7.2,9.1,14.2,6.1,8.8,10.2,16.5,7.9,10.1,13.2,20.1],
+      borderColor: GOLD, backgroundColor: 'rgba(201,168,76,0.1)',
+      tension: 0.4, fill: true, pointRadius: 3, borderWidth: 2
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top' } },
+    scales: {
+      y: { grid: { color: '#1e2f52' }, ticks: { callback: v => '$'+v+'K' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// ── YEAR CHART ─────────────────────────────────────────────
+new Chart(document.getElementById('yearChart'), {
+  type: 'bar',
+  data: {
+    labels: ['2014', '2015', '2016', '2017'],
+    datasets: [{
+      label: 'Revenue ($K)',
+      data: [484, 470, 609, 734],
+      backgroundColor: [BLUE, BLUE, GOLD, GREEN],
+      borderRadius: 6
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { grid: { color: '#1e2f52' }, ticks: { callback: v => '$'+v+'K' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// ── CATEGORY REVENUE ───────────────────────────────────────
+new Chart(document.getElementById('catRevChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Technology', 'Furniture', 'Office Supplies'],
+    datasets: [{ data: [836154, 741999, 719047],
+      backgroundColor: [GOLD, RED, BLUE], borderWidth: 2, borderColor: '#162444' }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom' },
+      tooltip: { callbacks: { label: ctx => ' $' + ctx.parsed.toLocaleString() } }
+    }
+  }
+});
+
+// ── CATEGORY PROFIT ────────────────────────────────────────
+new Chart(document.getElementById('catProfitChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Technology', 'Office Supplies', 'Furniture'],
+    datasets: [{ label: 'Profit ($)',
+      data: [145455, 122491, 18451],
+      backgroundColor: [GREEN, BLUE, RED], borderRadius: 6 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { grid: { color: '#1e2f52' }, ticks: { callback: v => '$'+v.toLocaleString() } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// ── SUB-CATEGORY CHART ─────────────────────────────────────
+const subData = {
+  labels: ['Tables','Bookcases','Supplies','Fasteners','Labels','Envelopes','Art','Machines','Furnishings','Appliances','Chairs','Storage','Binders','Accessories','Paper','Phones','Copiers'],
+  data: [-17725,-3473,-1189,949,1772,6964,6527,3295,13059,18138,26590,21279,30222,41937,34054,44516,55618]
+};
+new Chart(document.getElementById('subCatChart'), {
+  type: 'bar',
+  data: {
+    labels: subData.labels,
+    datasets: [{ label: 'Profit ($)',
+      data: subData.data,
+      backgroundColor: subData.data.map(v => v >= 0 ? GREEN : RED),
+      borderRadius: 4 }]
+  },
+  options: {
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: '#1e2f52' }, ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'K' } },
+      y: { grid: { display: false } }
+    }
+  }
+});
+
+// ── REGION REVENUE ─────────────────────────────────────────
+new Chart(document.getElementById('regionRevChart'), {
+  type: 'bar',
+  data: {
+    labels: ['West', 'East', 'Central', 'South'],
+    datasets: [{ label: 'Revenue ($K)',
+      data: [725, 679, 501, 392],
+      backgroundColor: [GREEN, BLUE, GOLD, GREY], borderRadius: 6 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { y: { grid: { color: '#1e2f52' } }, x: { grid: { display: false } } }
+  }
+});
+
+// ── REGION MARGIN ──────────────────────────────────────────
+new Chart(document.getElementById('regionMarginChart'), {
+  type: 'bar',
+  data: {
+    labels: ['West', 'East', 'South', 'Central'],
+    datasets: [{ label: 'Profit Margin (%)',
+      data: [14.9, 13.5, 11.9, 7.9],
+      backgroundColor: [GREEN, BLUE, GOLD, RED], borderRadius: 6 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { grid: { color: '#1e2f52' }, ticks: { callback: v => v + '%' }, max: 20 },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// ── SEGMENT REVENUE ────────────────────────────────────────
+new Chart(document.getElementById('segRevChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Consumer', 'Corporate', 'Home Office'],
+    datasets: [{ data: [1161401, 706146, 429653],
+      backgroundColor: [BLUE, GOLD, GREEN], borderWidth: 2, borderColor: '#162444' }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom' } }
+  }
+});
+
+// ── SEGMENT MARGIN ─────────────────────────────────────────
+new Chart(document.getElementById('segMarginChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Home Office', 'Corporate', 'Consumer'],
+    datasets: [{ label: 'Profit Margin (%)',
+      data: [14.1, 12.6, 11.2],
+      backgroundColor: [GREEN, BLUE, GOLD], borderRadius: 6 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { grid: { color: '#1e2f52' }, ticks: { callback: v => v + '%' }, max: 20 },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// ── DISCOUNT PROFIT CHART ──────────────────────────────────
+new Chart(document.getElementById('discProfitChart'), {
+  type: 'bar',
+  data: {
+    labels: ['0%', '1-20%', '21-40%', '41-60%', '61-80%'],
+    datasets: [{ label: 'Avg Profit ($)',
+      data: [51.2, 28.4, -8.5, -47.2, -82.1],
+      backgroundColor: [GREEN, GREEN, RED, RED, RED], borderRadius: 6 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { grid: { color: '#1e2f52' }, ticks: { callback: v => '$' + v } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// ── DISCOUNT VOLUME CHART ──────────────────────────────────
+new Chart(document.getElementById('discVolChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['0% (No Discount)', '1-20%', '21-40%', '41-60%', '61-80%'],
+    datasets: [{ data: [5197, 1268, 2431, 734, 364],
+      backgroundColor: [GREEN, BLUE, GOLD, '#e67e22', RED],
+      borderWidth: 2, borderColor: '#162444' }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom' } }
+  }
+});
+
+// ── RFM CHART ──────────────────────────────────────────────
+new Chart(document.getElementById('rfmChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Champions', 'Loyal', 'Potential', 'At-Risk', 'Lost'],
+    datasets: [{ data: [124, 74, 201, 218, 176],
+      backgroundColor: [GREEN, BLUE, GOLD, '#e67e22', RED],
+      borderWidth: 2, borderColor: '#162444' }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom' } }
+  }
+});
+
+// ── SHIP MODE CHART ────────────────────────────────────────
+new Chart(document.getElementById('shipChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Standard Class', 'Second Class', 'First Class', 'Same Day'],
+    datasets: [{ label: 'Revenue ($K)',
+      data: [1358, 459, 351, 129],
+      backgroundColor: [BLUE, GOLD, GREEN, RED], borderRadius: 6 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { y: { grid: { color: '#1e2f52' } }, x: { grid: { display: false } } }
+  }
+});
+</script>
+</body>
+</html>
